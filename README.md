@@ -12,7 +12,17 @@ Python Scrapy spider that searches Amazon for a particular keyword, extracts eac
 * Number of reviews
 * Seller rank
 
+### Proxy Solution
 This Amazon spider uses [Scraper API](https://www.scraperapi.com/) as the proxy solution. Scraper API has a free plan that allows you to make up to 1,000 requests per month which makes it ideal for the development phase, but can be easily scaled up to millions of pages per month if needs be.
+
+### Monitoring Solution
+To monitor our scraper,this spider uses [ScrapeOps](https://scrapeops.io/), a free monitoring tool specifically designed for web scraping. 
+
+**Live demo here:** [ScrapeOps Demo](https://scrapeops.io/app/login/demo) 
+
+![ScrapeOps Dashboard](https://scrapeops.io/assets/images/scrapeops-promo-286a59166d9f41db1c195f619aa36a06.png)
+
+
 
 ## Using the Amazon Spider
 Make sure Scrapy is installed:
@@ -27,6 +37,7 @@ Set the keywords you want to search in Amazon.
 queries = ['tshirt for men', ‘tshirt for women’]
 ```
 
+### Setting Up ScraperAPI
 Signup to [Scraper API](https://www.scraperapi.com/signup) and get your free API key that allows you to scrape 1,000 pages per month for free. Enter your API key into the API variable:
 
 ```
@@ -61,6 +72,37 @@ RETRY_TIMES = 5
 ```
 We should also set `RETRY_TIMES` to tell Scrapy to retry any failed requests (to 5 for example) and make sure that `DOWNLOAD_DELAY`  and `RANDOMIZE_DOWNLOAD_DELAY` aren’t enabled as these will lower your concurrency and are not needed with Scraper API.
 
+### Integrating ScrapeOps
+[ScrapeOps](https://scrapeops.io/) is already integrated into the scraper via the `settings.py` file. However, to use it you must:
+
+Install the [ScrapeOps Scrapy SDK](https://github.com/ScrapeOps/scrapeops-scrapy-sdk) on your machine.
+
+```
+pip install scrapeops-scrapy
+```
+
+And sign up for a [free ScrapeOps account here](https://scrapeops.io/app/register) so you can insert your **API Key** into the `settings.py` file:
+
+```
+    ## settings.py
+    
+    ## Add Your ScrapeOps API key
+    SCRAPEOPS_API_KEY = 'YOUR_API_KEY'
+    
+    ## Add In The ScrapeOps Extension
+    EXTENSIONS = {
+     'scrapeops_scrapy.extension.ScrapeOpsMonitor': 500, 
+    }
+    
+    ## Update The Download Middlewares
+    DOWNLOADER_MIDDLEWARES = { 
+	'scrapeops_scrapy.middleware.retry.RetryMiddleware': 550, 
+	'scrapy.downloadermiddlewares.retry.RetryMiddleware': None, 
+    }
+```
+From there, our scraping stats will be automatically logged and automatically shipped to our dashboard.
+
+### Running The Spider
 To run the spider, use:
 
 ```
