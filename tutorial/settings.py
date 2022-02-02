@@ -15,6 +15,21 @@ SPIDER_MODULES = ['tutorial.spiders']
 NEWSPIDER_MODULE = 'tutorial.spiders'
 
 
+## Add Your ScrapeOps API key
+SCRAPEOPS_API_KEY = 'YOUR_API_KEY' ## get free API key at https://scrapeops.io/app/register
+
+## Add In The ScrapeOps Extension
+EXTENSIONS = {
+ 'scrapeops_scrapy.extension.ScrapeOpsMonitor': 500, 
+}
+
+## Update The Download Middlewares
+DOWNLOADER_MIDDLEWARES = { 
+'scrapeops_scrapy.middleware.retry.RetryMiddleware': 550, 
+'scrapy.downloadermiddlewares.retry.RetryMiddleware': None, 
+}
+
+
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'tutorial (+http://www.yourdomain.com)'
 
@@ -50,11 +65,6 @@ RETRY_TIMES = 5
 #    'tutorial.middlewares.TutorialSpiderMiddleware': 543,
 #}
 
-# Enable or disable downloader middlewares
-# See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
-#DOWNLOADER_MIDDLEWARES = {
-#    'tutorial.middlewares.TutorialDownloaderMiddleware': 543,
-#}
 
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html
