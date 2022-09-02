@@ -38,10 +38,11 @@ class AmazonSpider(scrapy.Spider):
     def parse_product_page(self, response):
         asin = response.meta['asin']
         title = response.xpath('//*[@id="productTitle"]/text()').extract_first()
-        image = re.search('"large":"(.*?)"',response.text).groups()[0]
+        # image = re.search('"large":"(.*?)"',response.text).groups()[0]
         rating = response.xpath('//*[@id="acrPopover"]/@title').extract_first()
         number_of_reviews = response.xpath('//*[@id="acrCustomerReviewText"]/text()').extract_first()
         price = response.xpath('//*[@id="priceblock_ourprice"]/text()').extract_first()
+        dimensions = response.xpath('//*[@id="detailBullets_feature_div"]/ul/li[1]/span/span[2]').extract_first()
 
         if not price:
             price = response.xpath('//*[@data-asin-price]/@data-asin-price').extract_first() or \
@@ -59,9 +60,9 @@ class AmazonSpider(scrapy.Spider):
         
         bullet_points = response.xpath('//*[@id="feature-bullets"]//li/span/text()').extract()
         seller_rank = response.xpath('//*[text()="Amazon Best Sellers Rank:"]/parent::*//text()[not(parent::style)]').extract()
-        yield {'asin': asin, 'Title': title, 'MainImage': image, 'Rating': rating, 'NumberOfReviews': number_of_reviews,
+        yield {'asin': asin, 'Title': title, 'Rating': rating, 'NumberOfReviews': number_of_reviews,
                'Price': price, 'AvailableSizes': sizes, 'AvailableColors': colors, 'BulletPoints': bullet_points,
-               'SellerRank': seller_rank}
+               'SellerRank': seller_rank, "dimensions": dimensions}
 
         
 
