@@ -4,7 +4,7 @@ from urllib.parse import urlencode
 from urllib.parse import urljoin
 import re
 import json
-queries = ['tshirt for men']    ##Enter keywords here ['keyword1', 'keyword2', 'etc']
+queries = ["boy's cotton sweater"]    ##Enter keywords here ['keyword1', 'keyword2', 'etc']
 API = 'b5e67c4d019e3aa20b24fae797cf884f'                        ##Insert Scraperapi API key here. Signup here for free trial with 5,000 requests: https://www.scraperapi.com/signup
 
 
@@ -24,6 +24,7 @@ class AmazonSpider(scrapy.Spider):
 
     def parse_keyword_response(self, response):
         products = response.xpath('//*[@data-asin]')
+        response
 
         for product in products:
             asin = product.xpath('@data-asin').extract_first()
@@ -31,6 +32,7 @@ class AmazonSpider(scrapy.Spider):
             yield scrapy.Request(url=get_url(product_url), callback=self.parse_product_page, meta={'asin': asin})
             
         next_page = response.xpath('//li[@class="a-last"]/a/@href').extract_first()
+        
         if next_page:
             url = urljoin("https://www.amazon.com",next_page)
             yield scrapy.Request(url=get_url(url), callback=self.parse_keyword_response)
