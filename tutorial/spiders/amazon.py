@@ -4,7 +4,9 @@ from urllib.parse import urlencode
 from urllib.parse import urljoin
 import re
 import json
-queries = ["boy's cotton sweater"]    ##Enter keywords here ['keyword1', 'keyword2', 'etc']
+import os
+import logging
+queries = ["girls  knitted skirts"]    ##Enter keywords here ['keyword1', 'keyword2', 'etc']
 API = 'b5e67c4d019e3aa20b24fae797cf884f'                        ##Insert Scraperapi API key here. Signup here for free trial with 5,000 requests: https://www.scraperapi.com/signup
 
 
@@ -20,53 +22,51 @@ class AmazonSpider(scrapy.Spider):
     def start_requests(self):
         for query in queries:
             url = 'https://www.amazon.com/s?' + urlencode({'k': query})
-            yield scrapy.Request(url=get_url(url), callback=self.parse_keyword_response)
+            yield scrapy.Request(url=get_url(url), callback=self.parse_keyword_response, meta={'query': query})
 
     def parse_keyword_response(self, response):
-        products = response.xpath('//*[@data-asin]')
-        response
+        products = []
+        pattern = "/dp/B0[A-Z0-9]{8}"
+        matches = re.findall(pattern, response.text)
+        for match in matches:
+            products.append(match[4:])
+        products = list(set(products))
+        logging.log(logging.WARNING, products)
 
+        query_filename = '_'.join(response.meta['query'].split())
         for product in products:
-            asin = product.xpath('@data-asin').extract_first()
+            asin = product
             product_url = f"https://www.amazon.com/dp/{asin}"
-            yield scrapy.Request(url=get_url(product_url), callback=self.parse_product_page, meta={'asin': asin})
-            
-        next_page = response.xpath('//li[@class="a-last"]/a/@href').extract_first()
-        
+            yield scrapy.Request(url=get_url(product_url), callback=self.parse_product_page, meta=
+                                    {'asin': asin, 'filename': query_filename})
+
+        next_page_class = "s-pagination-item.s-pagination-next.s-pagination-button.s-pagination-separator"
+        next_page_query = 'a.'+next_page_class+"::attr(href)"
+        next_page = response.css(next_page_query).get()
         if next_page:
-            url = urljoin("https://www.amazon.com",next_page)
-            yield scrapy.Request(url=get_url(url), callback=self.parse_keyword_response)
+            url = urljoin("https://www.amazon.com", next_page)
+            yield scrapy.Request(url=get_url(url), callback=self.parse_keyword_response,
+                                 meta={'query': response.meta['query']})
 
     def parse_product_page(self, response):
+
+        filename = response.meta['filename']
         asin = response.meta['asin']
+        page = response.text
         title = response.xpath('//*[@id="productTitle"]/text()').extract_first()
-        # image = re.search('"large":"(.*?)"',response.text).groups()[0]
         rating = response.xpath('//*[@id="acrPopover"]/@title').extract_first()
         number_of_reviews = response.xpath('//*[@id="acrCustomerReviewText"]/text()').extract_first()
         price = response.xpath('//*[@id="priceblock_ourprice"]/text()').extract_first()
-        dimensions = response.xpath('//*[@id="detailBullets_feature_div"]/ul/li[1]/span/span[2]').extract_first()
+        files = os.listdir()
+        if filename not in files:
+            os.mkdir(filename)
 
-        if not price:
-            price = response.xpath('//*[@data-asin-price]/@data-asin-price').extract_first() or \
-                    response.xpath('//*[@id="price_inside_buybox"]/text()').extract_first()
-        
-        temp = response.xpath('//*[@id="twister"]')
-        sizes = []
-        colors = []
-        if temp:
-            s = re.search('"variationValues" : ({.*})', response.text).groups()[0]
-            json_acceptable = s.replace("'", "\"")
-            di = json.loads(json_acceptable)
-            sizes = di.get('size_name', [])
-            colors = di.get('color_name', [])
-        
-        bullet_points = response.xpath('//*[@id="feature-bullets"]//li/span/text()').extract()
-        seller_rank = response.xpath('//*[text()="Amazon Best Sellers Rank:"]/parent::*//text()[not(parent::style)]').extract()
-        yield {'asin': asin, 'Title': title, 'Rating': rating, 'NumberOfReviews': number_of_reviews,
-               'Price': price, 'AvailableSizes': sizes, 'AvailableColors': colors, 'BulletPoints': bullet_points,
-               'SellerRank': seller_rank, "dimensions": dimensions}
+        with open(filename+"/"+asin+".html", 'w') as f:
+            f.write(page)
 
-        
+        yield {
+            "asin": asin, "title": title, 'No. of ratings': number_of_reviews, 'Stars': rating, "price": price,
+        }
 
 
 
